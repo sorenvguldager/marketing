@@ -1,3 +1,29 @@
+function matchesFilter(text, filter) {
+  const lowerText = text.toLowerCase();
+  const lowerFilter = filter.toLowerCase();
+
+  // Split on % to get the parts that must match
+  const parts = lowerFilter.split("%").filter((p) => p !== "");
+
+  if (parts.length === 0) return false;
+
+  // If filter doesn't start with %, first part must match from the beginning
+  const startsWild = lowerFilter.startsWith("%");
+  // If filter doesn't end with %, last part must match at the end
+  const endsWild = lowerFilter.endsWith("%");
+
+  let pos = 0;
+  for (let i = 0; i < parts.length; i++) {
+    const idx = lowerText.indexOf(parts[i], pos);
+    if (idx === -1) return false;
+    if (i === 0 && !startsWild && idx !== 0) return false;
+    pos = idx + parts[i].length;
+  }
+  if (!endsWild && pos !== lowerText.length) return false;
+
+  return true;
+}
+
 function removeMatchingRows(filterTexts) {
   if (!filterTexts || filterTexts.length === 0) return;
 
@@ -5,7 +31,7 @@ function removeMatchingRows(filterTexts) {
   rows.forEach((row) => {
     const text = row.textContent;
     for (const filter of filterTexts) {
-      if (text.includes(filter)) {
+      if (matchesFilter(text, filter)) {
         row.remove();
         break;
       }
