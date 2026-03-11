@@ -1,21 +1,18 @@
 const listEl = document.getElementById("filterList");
-const input = document.getElementById("newFilter");
+const wordInput = document.getElementById("newWord");
+const dateInput = document.getElementById("newDate");
 const addBtn = document.getElementById("addBtn");
 
-const dateListEl = document.getElementById("dateFilterList");
-const dateInput = document.getElementById("newDateFilter");
-const addDateBtn = document.getElementById("addDateBtn");
-
-function render(filterTexts) {
+function render(combinedFilters) {
   listEl.innerHTML = "";
-  if (filterTexts.length === 0) {
+  if (combinedFilters.length === 0) {
     listEl.innerHTML = '<li class="empty">Ingen filtre tilføjet endnu</li>';
     return;
   }
-  filterTexts.forEach((text, i) => {
+  combinedFilters.forEach((filter, i) => {
     const li = document.createElement("li");
     const span = document.createElement("span");
-    span.textContent = text;
+    span.textContent = filter.word + "  +  " + filter.date;
     const btn = document.createElement("button");
     btn.className = "remove-btn";
     btn.textContent = "\u00d7";
@@ -26,42 +23,24 @@ function render(filterTexts) {
   });
 }
 
-function renderDateFilters(dateFilters) {
-  dateListEl.innerHTML = "";
-  if (dateFilters.length === 0) {
-    dateListEl.innerHTML = '<li class="empty">Ingen datofiltre tilføjet endnu</li>';
-    return;
-  }
-  dateFilters.forEach((text, i) => {
-    const li = document.createElement("li");
-    const span = document.createElement("span");
-    span.textContent = text;
-    const btn = document.createElement("button");
-    btn.className = "remove-btn";
-    btn.textContent = "\u00d7";
-    btn.addEventListener("click", () => removeDateFilter(i));
-    li.appendChild(span);
-    li.appendChild(btn);
-    dateListEl.appendChild(li);
-  });
-}
-
 function loadFilters() {
-  chrome.storage.sync.get({ filterTexts: [], dateFilters: [] }, (data) => {
-    render(data.filterTexts);
-    renderDateFilters(data.dateFilters);
+  chrome.storage.sync.get({ combinedFilters: [] }, (data) => {
+    render(data.combinedFilters);
   });
 }
 
 function addFilter() {
-  const value = input.value.trim();
-  if (!value) return;
-  chrome.storage.sync.get({ filterTexts: [] }, (data) => {
-    const filters = data.filterTexts;
-    if (!filters.includes(value)) {
-      filters.push(value);
-      chrome.storage.sync.set({ filterTexts: filters }, () => {
-        input.value = "";
+  const word = wordInput.value.trim();
+  const date = dateInput.value.trim();
+  if (!word || !date) return;
+  chrome.storage.sync.get({ combinedFilters: [] }, (data) => {
+    const filters = data.combinedFilters;
+    const exists = filters.some((f) => f.word === word && f.date === date);
+    if (!exists) {
+      filters.push({ word, date });
+      chrome.storage.sync.set({ combinedFilters: filters }, () => {
+        wordInput.value = "";
+        dateInput.value = "";
         render(filters);
       });
     }
@@ -69,48 +48,21 @@ function addFilter() {
 }
 
 function removeFilter(index) {
-  chrome.storage.sync.get({ filterTexts: [] }, (data) => {
-    const filters = data.filterTexts;
+  chrome.storage.sync.get({ combinedFilters: [] }, (data) => {
+    const filters = data.combinedFilters;
     filters.splice(index, 1);
-    chrome.storage.sync.set({ filterTexts: filters }, () => {
+    chrome.storage.sync.set({ combinedFilters: filters }, () => {
       render(filters);
     });
   });
 }
 
-function addDateFilter() {
-  const value = dateInput.value.trim();
-  if (!value) return;
-  chrome.storage.sync.get({ dateFilters: [] }, (data) => {
-    const filters = data.dateFilters;
-    if (!filters.includes(value)) {
-      filters.push(value);
-      chrome.storage.sync.set({ dateFilters: filters }, () => {
-        dateInput.value = "";
-        renderDateFilters(filters);
-      });
-    }
-  });
-}
-
-function removeDateFilter(index) {
-  chrome.storage.sync.get({ dateFilters: [] }, (data) => {
-    const filters = data.dateFilters;
-    filters.splice(index, 1);
-    chrome.storage.sync.set({ dateFilters: filters }, () => {
-      renderDateFilters(filters);
-    });
-  });
-}
-
 addBtn.addEventListener("click", addFilter);
-input.addEventListener("keydown", (e) => {
+wordInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") addFilter();
 });
-
-addDateBtn.addEventListener("click", addDateFilter);
 dateInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") addDateFilter();
+  if (e.key === "Enter") addFilter();
 });
 
 loadFilters();
