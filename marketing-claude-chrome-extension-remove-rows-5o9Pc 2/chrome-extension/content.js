@@ -21,12 +21,15 @@ function matchesWord(text, filter) {
 }
 
 function matchesAmount(text, amount) {
-  return text.includes(amount);
+  // Normalize spaces so " -742,22 " matches "742,22" or "-742,22"
+  const normalized = text.replace(/\s+/g, " ");
+  return normalized.includes(amount);
 }
 
-let isFiltering = false;
-
 function removeMatchingRows(wordFilters, amountFilters) {
+  // Disconnect observer to prevent infinite loop
+  observer.disconnect();
+
   const rows = document.querySelectorAll("tr");
   rows.forEach((row) => {
     const text = row.textContent;
@@ -45,25 +48,30 @@ function removeMatchingRows(wordFilters, amountFilters) {
       }
     }
   });
+
+  // Reconnect observer after filtering is done
+  startObserver();
 }
 
 function runFilter() {
-  if (isFiltering) return;
-  isFiltering = true;
   chrome.storage.sync.get({ wordFilters: [], amountFilters: [] }, (data) => {
+    if (data.wordFilters.length === 0 && data.amountFilters.length === 0) return;
     removeMatchingRows(data.wordFilters, data.amountFilters);
-    isFiltering = false;
   });
+}
+
+// Observer for dynamically loaded content
+const observer = new MutationObserver(() => {
+  runFilter();
+});
+
+function startObserver() {
+  observer.observe(document.body, { childList: true, subtree: true });
 }
 
 // Run on page load
 runFilter();
-
-// Re-run when DOM changes (for dynamically loaded content)
-const observer = new MutationObserver(() => {
-  runFilter();
-});
-observer.observe(document.body, { childList: true, subtree: true });
+startObserver();
 
 // Re-run when filter list is updated from popup
 chrome.storage.onChanged.addListener((changes) => {
