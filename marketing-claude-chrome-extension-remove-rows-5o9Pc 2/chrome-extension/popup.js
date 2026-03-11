@@ -1,116 +1,115 @@
-const listEl = document.getElementById("filterList");
-const input = document.getElementById("newFilter");
-const addBtn = document.getElementById("addBtn");
+const wordListEl = document.getElementById("wordList");
+const wordInput = document.getElementById("newWord");
+const addWordBtn = document.getElementById("addWordBtn");
 
-const dateListEl = document.getElementById("dateFilterList");
-const dateInput = document.getElementById("newDateFilter");
-const addDateBtn = document.getElementById("addDateBtn");
+const amountListEl = document.getElementById("amountList");
+const amountInput = document.getElementById("newAmount");
+const addAmountBtn = document.getElementById("addAmountBtn");
 
-function render(filterTexts) {
-  listEl.innerHTML = "";
-  if (filterTexts.length === 0) {
-    listEl.innerHTML = '<li class="empty">Ingen filtre tilføjet endnu</li>';
+function renderList(el, items, removeFn) {
+  el.innerHTML = "";
+  if (items.length === 0) {
+    el.innerHTML = '<li class="empty">Ingen filtre tilføjet endnu</li>';
     return;
   }
-  filterTexts.forEach((text, i) => {
+  items.forEach((text, i) => {
     const li = document.createElement("li");
     const span = document.createElement("span");
     span.textContent = text;
     const btn = document.createElement("button");
     btn.className = "remove-btn";
     btn.textContent = "\u00d7";
-    btn.addEventListener("click", () => removeFilter(i));
+    btn.addEventListener("click", () => removeFn(i));
     li.appendChild(span);
     li.appendChild(btn);
-    listEl.appendChild(li);
+    el.appendChild(li);
   });
 }
 
-function renderDateFilters(dateFilters) {
-  dateListEl.innerHTML = "";
-  if (dateFilters.length === 0) {
-    dateListEl.innerHTML = '<li class="empty">Ingen datofiltre tilføjet endnu</li>';
-    return;
+function loadAll() {
+  chrome.storage.sync.get({ wordFilters: [], amountFilters: [] }, (data) => {
+    renderList(wordListEl, data.wordFilters, removeWord);
+    renderList(amountListEl, data.amountFilters, removeAmount);
+  });
+}
+
+function addWord() {
+  const value = wordInput.value.trim();
+  if (!value) return;
+  chrome.storage.sync.get({ wordFilters: [] }, (data) => {
+    const filters = data.wordFilters;
+    if (!filters.includes(value)) {
+      filters.push(value);
+      chrome.storage.sync.set({ wordFilters: filters }, () => {
+        wordInput.value = "";
+        renderList(wordListEl, filters, removeWord);
+      });
+    }
+  });
+}
+
+function removeWord(index) {
+  chrome.storage.sync.get({ wordFilters: [] }, (data) => {
+    const filters = data.wordFilters;
+    filters.splice(index, 1);
+    chrome.storage.sync.set({ wordFilters: filters }, () => {
+      renderList(wordListEl, filters, removeWord);
+    });
+  });
+}
+
+function addAmount() {
+  const value = amountInput.value.trim();
+  if (!value) return;
+  chrome.storage.sync.get({ amountFilters: [] }, (data) => {
+    const filters = data.amountFilters;
+    if (!filters.includes(value)) {
+      filters.push(value);
+      chrome.storage.sync.set({ amountFilters: filters }, () => {
+        amountInput.value = "";
+        renderList(amountListEl, filters, removeAmount);
+      });
+    }
+  });
+}
+
+function removeAmount(index) {
+  chrome.storage.sync.get({ amountFilters: [] }, (data) => {
+    const filters = data.amountFilters;
+    filters.splice(index, 1);
+    chrome.storage.sync.set({ amountFilters: filters }, () => {
+      renderList(amountListEl, filters, removeAmount);
+    });
+  });
+}
+
+addWordBtn.addEventListener("click", addWord);
+wordInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addWord();
+});
+
+addAmountBtn.addEventListener("click", addAmount);
+amountInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addAmount();
+});
+
+// Inject content script into current tab and all its frames
+async function injectAndRun() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab) return;
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id, allFrames: true },
+      files: ["content.js"],
+    });
+  } catch (e) {
+    console.log("Could not inject:", e);
   }
-  dateFilters.forEach((text, i) => {
-    const li = document.createElement("li");
-    const span = document.createElement("span");
-    span.textContent = text;
-    const btn = document.createElement("button");
-    btn.className = "remove-btn";
-    btn.textContent = "\u00d7";
-    btn.addEventListener("click", () => removeDateFilter(i));
-    li.appendChild(span);
-    li.appendChild(btn);
-    dateListEl.appendChild(li);
-  });
 }
 
-function loadFilters() {
-  chrome.storage.sync.get({ filterTexts: [], dateFilters: [] }, (data) => {
-    render(data.filterTexts);
-    renderDateFilters(data.dateFilters);
-  });
-}
+// Re-inject after adding/removing filters to ensure it runs
+const origAddWord = addWord;
+const origAddAmount = addAmount;
 
-function addFilter() {
-  const value = input.value.trim();
-  if (!value) return;
-  chrome.storage.sync.get({ filterTexts: [] }, (data) => {
-    const filters = data.filterTexts;
-    if (!filters.includes(value)) {
-      filters.push(value);
-      chrome.storage.sync.set({ filterTexts: filters }, () => {
-        input.value = "";
-        render(filters);
-      });
-    }
-  });
-}
-
-function removeFilter(index) {
-  chrome.storage.sync.get({ filterTexts: [] }, (data) => {
-    const filters = data.filterTexts;
-    filters.splice(index, 1);
-    chrome.storage.sync.set({ filterTexts: filters }, () => {
-      render(filters);
-    });
-  });
-}
-
-function addDateFilter() {
-  const value = dateInput.value.trim();
-  if (!value) return;
-  chrome.storage.sync.get({ dateFilters: [] }, (data) => {
-    const filters = data.dateFilters;
-    if (!filters.includes(value)) {
-      filters.push(value);
-      chrome.storage.sync.set({ dateFilters: filters }, () => {
-        dateInput.value = "";
-        renderDateFilters(filters);
-      });
-    }
-  });
-}
-
-function removeDateFilter(index) {
-  chrome.storage.sync.get({ dateFilters: [] }, (data) => {
-    const filters = data.dateFilters;
-    filters.splice(index, 1);
-    chrome.storage.sync.set({ dateFilters: filters }, () => {
-      renderDateFilters(filters);
-    });
-  });
-}
-
-addBtn.addEventListener("click", addFilter);
-input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") addFilter();
-});
-
-addDateBtn.addEventListener("click", addDateFilter);
-dateInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") addDateFilter();
-});
-
-loadFilters();
+loadAll();
+injectAndRun();

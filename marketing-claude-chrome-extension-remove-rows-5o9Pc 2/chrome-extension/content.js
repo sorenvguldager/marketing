@@ -1,15 +1,11 @@
-function matchesFilter(text, filter) {
+function matchesWord(text, filter) {
   const lowerText = text.toLowerCase();
   const lowerFilter = filter.toLowerCase();
 
-  // Split on % to get the parts that must match
   const parts = lowerFilter.split("%").filter((p) => p !== "");
-
   if (parts.length === 0) return false;
 
-  // If filter doesn't start with %, first part must match from the beginning
   const startsWild = lowerFilter.startsWith("%");
-  // If filter doesn't end with %, last part must match at the end
   const endsWild = lowerFilter.endsWith("%");
 
   let pos = 0;
@@ -24,53 +20,64 @@ function matchesFilter(text, filter) {
   return true;
 }
 
-function matchesDateFilter(text, dateFilter) {
-  return text.toLowerCase().includes(dateFilter.toLowerCase());
+function matchesAmount(text, amount) {
+  const normalized = text.replace(/\s+/g, " ");
+  return normalized.includes(amount);
 }
 
-function removeMatchingRows(filterTexts, dateFilters) {
+function removeMatchingRows(wordFilters, amountFilters) {
+  observer.disconnect();
+
   const rows = document.querySelectorAll("tr");
   rows.forEach((row) => {
     const text = row.textContent;
 
-    if (filterTexts && filterTexts.length > 0) {
-      for (const filter of filterTexts) {
-        if (matchesFilter(text, filter)) {
-          row.remove();
-          return;
-        }
+    for (const w of wordFilters) {
+      if (matchesWord(text, w)) {
+        row.remove();
+        return;
       }
     }
 
-    if (dateFilters && dateFilters.length > 0) {
-      for (const df of dateFilters) {
-        if (matchesDateFilter(text, df)) {
-          row.remove();
-          return;
-        }
+    for (const a of amountFilters) {
+      if (matchesAmount(text, a)) {
+        row.remove();
+        return;
       }
     }
   });
+
+  // Remove empty dbp-posting-table elements (no <tr> rows left)
+  const tables = document.querySelectorAll("dbp-posting-table");
+  tables.forEach((table) => {
+    if (table.querySelectorAll("tr[dbp-posting-item]").length === 0) {
+      table.remove();
+    }
+  });
+
+  startObserver();
 }
 
 function runFilter() {
-  chrome.storage.sync.get({ filterTexts: [], dateFilters: [] }, (data) => {
-    removeMatchingRows(data.filterTexts, data.dateFilters);
+  chrome.storage.sync.get({ wordFilters: [], amountFilters: [] }, (data) => {
+    if (data.wordFilters.length === 0 && data.amountFilters.length === 0) return;
+    removeMatchingRows(data.wordFilters, data.amountFilters);
   });
 }
 
-// Run on page load
-runFilter();
-
-// Re-run when DOM changes (for dynamically loaded content)
 const observer = new MutationObserver(() => {
   runFilter();
 });
-observer.observe(document.body, { childList: true, subtree: true });
 
-// Re-run when filter list is updated from popup
+function startObserver() {
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+runFilter();
+startObserver();
+
 chrome.storage.onChanged.addListener((changes) => {
-  if (changes.filterTexts || changes.dateFilters) {
+  if (changes.wordFilters || changes.amountFilters) {
     runFilter();
   }
 });

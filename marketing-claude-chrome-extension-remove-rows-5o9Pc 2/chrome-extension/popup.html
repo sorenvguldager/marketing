@@ -14,19 +14,22 @@
       margin: 0 0 10px;
       font-size: 15px;
     }
+    h2 + h2, ul + h2 {
+      margin-top: 14px;
+    }
     .add-row {
       display: flex;
       gap: 6px;
       margin-bottom: 10px;
     }
-    #newFilter {
+    .add-row input {
       flex: 1;
       padding: 6px 8px;
       border: 1px solid #ccc;
       border-radius: 4px;
       font-size: 13px;
     }
-    #addBtn {
+    .add-btn {
       padding: 6px 12px;
       background: #0066cc;
       color: #fff;
@@ -35,12 +38,12 @@
       cursor: pointer;
       font-size: 13px;
     }
-    #addBtn:hover { background: #0052a3; }
+    .add-btn:hover { background: #0052a3; }
     ul {
       list-style: none;
       padding: 0;
       margin: 0;
-      max-height: 300px;
+      max-height: 200px;
       overflow-y: auto;
     }
     li {
@@ -69,19 +72,19 @@
   </style>
 </head>
 <body>
-  <h2>Filtrér rækker efter tekst</h2>
+  <h2>Skjul rækker med ord</h2>
   <div class="add-row">
-    <input type="text" id="newFilter" placeholder="Brug % som wildcard, fx %paypal%">
-    <button id="addBtn">Tilføj</button>
+    <input type="text" id="newWord" placeholder="Brug % som wildcard, fx %paypal%">
+    <button class="add-btn" id="addWordBtn">Tilføj</button>
   </div>
-  <ul id="filterList"></ul>
+  <ul id="wordList"></ul>
 
-  <h2 style="margin-top: 14px;">Filtrér rækker efter dato</h2>
+  <h2>Skjul rækker med beløb</h2>
   <div class="add-row">
-    <input type="text" id="newDateFilter" placeholder="Dato-søgning, fx 2024-01 eller 15-03">
-    <button id="addDateBtn">Tilføj</button>
+    <input type="text" id="newAmount" placeholder="Beløb, fx 199.00 eller 1.500,00">
+    <button class="add-btn" id="addAmountBtn">Tilføj</button>
   </div>
-  <ul id="dateFilterList"></ul>
+  <ul id="amountList"></ul>
   <script src="popup.js"></script>
 </body>
 </html>
