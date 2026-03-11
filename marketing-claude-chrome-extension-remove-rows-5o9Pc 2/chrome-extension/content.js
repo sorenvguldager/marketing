@@ -1,5 +1,3 @@
-console.log("[RowFilter] Content script loaded");
-
 function matchesWord(text, filter) {
   const lowerText = text.toLowerCase();
   const lowerFilter = filter.toLowerCase();
@@ -31,43 +29,30 @@ function removeMatchingRows(wordFilters, amountFilters) {
   observer.disconnect();
 
   const rows = document.querySelectorAll("tr");
-  console.log("[RowFilter] Found " + rows.length + " rows");
-  console.log("[RowFilter] Word filters:", wordFilters);
-  console.log("[RowFilter] Amount filters:", amountFilters);
-
-  let removed = 0;
   rows.forEach((row) => {
     const text = row.textContent;
 
     for (const w of wordFilters) {
       if (matchesWord(text, w)) {
-        console.log("[RowFilter] WORD MATCH - removing row:", w, text.substring(0, 80));
         row.remove();
-        removed++;
         return;
       }
     }
 
     for (const a of amountFilters) {
       if (matchesAmount(text, a)) {
-        console.log("[RowFilter] AMOUNT MATCH - removing row:", a, text.substring(0, 80));
         row.remove();
-        removed++;
         return;
       }
     }
   });
 
-  console.log("[RowFilter] Removed " + removed + " rows");
   startObserver();
 }
 
 function runFilter() {
   chrome.storage.sync.get({ wordFilters: [], amountFilters: [] }, (data) => {
-    if (data.wordFilters.length === 0 && data.amountFilters.length === 0) {
-      console.log("[RowFilter] No filters set");
-      return;
-    }
+    if (data.wordFilters.length === 0 && data.amountFilters.length === 0) return;
     removeMatchingRows(data.wordFilters, data.amountFilters);
   });
 }
@@ -84,7 +69,6 @@ runFilter();
 startObserver();
 
 chrome.storage.onChanged.addListener((changes) => {
-  console.log("[RowFilter] Storage changed:", changes);
   if (changes.wordFilters || changes.amountFilters) {
     runFilter();
   }
