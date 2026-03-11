@@ -47,6 +47,14 @@ function removeMatchingRows(wordFilters, amountFilters) {
     }
   });
 
+  // Remove empty dbp-posting-table elements (no <tr> rows left)
+  const tables = document.querySelectorAll("dbp-posting-table");
+  tables.forEach((table) => {
+    if (table.querySelectorAll("tr").length === 0) {
+      table.remove();
+    }
+  });
+
   startObserver();
 }
 
