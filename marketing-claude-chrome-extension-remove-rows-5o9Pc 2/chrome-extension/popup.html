@@ -69,12 +69,19 @@
   </style>
 </head>
 <body>
-  <h2>Filtrér rækker</h2>
+  <h2>Filtrér rækker efter tekst</h2>
   <div class="add-row">
     <input type="text" id="newFilter" placeholder="Brug % som wildcard, fx %paypal%">
     <button id="addBtn">Tilføj</button>
   </div>
   <ul id="filterList"></ul>
+
+  <h2 style="margin-top: 14px;">Filtrér rækker efter dato</h2>
+  <div class="add-row">
+    <input type="text" id="newDateFilter" placeholder="Dato-søgning, fx 2024-01 eller 15-03">
+    <button id="addDateBtn">Tilføj</button>
+  </div>
+  <ul id="dateFilterList"></ul>
   <script src="popup.js"></script>
 </body>
 </html>

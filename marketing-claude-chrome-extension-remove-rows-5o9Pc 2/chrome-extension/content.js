@@ -24,24 +24,38 @@ function matchesFilter(text, filter) {
   return true;
 }
 
-function removeMatchingRows(filterTexts) {
-  if (!filterTexts || filterTexts.length === 0) return;
+function matchesDateFilter(text, dateFilter) {
+  return text.toLowerCase().includes(dateFilter.toLowerCase());
+}
 
+function removeMatchingRows(filterTexts, dateFilters) {
   const rows = document.querySelectorAll("tr");
   rows.forEach((row) => {
     const text = row.textContent;
-    for (const filter of filterTexts) {
-      if (matchesFilter(text, filter)) {
-        row.remove();
-        break;
+
+    if (filterTexts && filterTexts.length > 0) {
+      for (const filter of filterTexts) {
+        if (matchesFilter(text, filter)) {
+          row.remove();
+          return;
+        }
+      }
+    }
+
+    if (dateFilters && dateFilters.length > 0) {
+      for (const df of dateFilters) {
+        if (matchesDateFilter(text, df)) {
+          row.remove();
+          return;
+        }
       }
     }
   });
 }
 
 function runFilter() {
-  chrome.storage.sync.get({ filterTexts: [] }, (data) => {
-    removeMatchingRows(data.filterTexts);
+  chrome.storage.sync.get({ filterTexts: [], dateFilters: [] }, (data) => {
+    removeMatchingRows(data.filterTexts, data.dateFilters);
   });
 }
 
@@ -56,7 +70,7 @@ observer.observe(document.body, { childList: true, subtree: true });
 
 // Re-run when filter list is updated from popup
 chrome.storage.onChanged.addListener((changes) => {
-  if (changes.filterTexts) {
-    removeMatchingRows(changes.filterTexts.newValue);
+  if (changes.filterTexts || changes.dateFilters) {
+    runFilter();
   }
 });
