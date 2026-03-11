@@ -93,4 +93,23 @@ amountInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") addAmount();
 });
 
+// Inject content script into current tab and all its frames
+async function injectAndRun() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab) return;
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id, allFrames: true },
+      files: ["content.js"],
+    });
+  } catch (e) {
+    console.log("Could not inject:", e);
+  }
+}
+
+// Re-inject after adding/removing filters to ensure it runs
+const origAddWord = addWord;
+const origAddAmount = addAmount;
+
 loadAll();
+injectAndRun();
