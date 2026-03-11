@@ -1,68 +1,96 @@
-const listEl = document.getElementById("filterList");
+const wordListEl = document.getElementById("wordList");
 const wordInput = document.getElementById("newWord");
-const dateInput = document.getElementById("newDate");
-const addBtn = document.getElementById("addBtn");
+const addWordBtn = document.getElementById("addWordBtn");
 
-function render(combinedFilters) {
-  listEl.innerHTML = "";
-  if (combinedFilters.length === 0) {
-    listEl.innerHTML = '<li class="empty">Ingen filtre tilføjet endnu</li>';
+const amountListEl = document.getElementById("amountList");
+const amountInput = document.getElementById("newAmount");
+const addAmountBtn = document.getElementById("addAmountBtn");
+
+function renderList(el, items, removeFn) {
+  el.innerHTML = "";
+  if (items.length === 0) {
+    el.innerHTML = '<li class="empty">Ingen filtre tilføjet endnu</li>';
     return;
   }
-  combinedFilters.forEach((filter, i) => {
+  items.forEach((text, i) => {
     const li = document.createElement("li");
     const span = document.createElement("span");
-    span.textContent = filter.word + "  +  " + filter.date;
+    span.textContent = text;
     const btn = document.createElement("button");
     btn.className = "remove-btn";
     btn.textContent = "\u00d7";
-    btn.addEventListener("click", () => removeFilter(i));
+    btn.addEventListener("click", () => removeFn(i));
     li.appendChild(span);
     li.appendChild(btn);
-    listEl.appendChild(li);
+    el.appendChild(li);
   });
 }
 
-function loadFilters() {
-  chrome.storage.sync.get({ combinedFilters: [] }, (data) => {
-    render(data.combinedFilters);
+function loadAll() {
+  chrome.storage.sync.get({ wordFilters: [], amountFilters: [] }, (data) => {
+    renderList(wordListEl, data.wordFilters, removeWord);
+    renderList(amountListEl, data.amountFilters, removeAmount);
   });
 }
 
-function addFilter() {
-  const word = wordInput.value.trim();
-  const date = dateInput.value.trim();
-  if (!word || !date) return;
-  chrome.storage.sync.get({ combinedFilters: [] }, (data) => {
-    const filters = data.combinedFilters;
-    const exists = filters.some((f) => f.word === word && f.date === date);
-    if (!exists) {
-      filters.push({ word, date });
-      chrome.storage.sync.set({ combinedFilters: filters }, () => {
+function addWord() {
+  const value = wordInput.value.trim();
+  if (!value) return;
+  chrome.storage.sync.get({ wordFilters: [] }, (data) => {
+    const filters = data.wordFilters;
+    if (!filters.includes(value)) {
+      filters.push(value);
+      chrome.storage.sync.set({ wordFilters: filters }, () => {
         wordInput.value = "";
-        dateInput.value = "";
-        render(filters);
+        renderList(wordListEl, filters, removeWord);
       });
     }
   });
 }
 
-function removeFilter(index) {
-  chrome.storage.sync.get({ combinedFilters: [] }, (data) => {
-    const filters = data.combinedFilters;
+function removeWord(index) {
+  chrome.storage.sync.get({ wordFilters: [] }, (data) => {
+    const filters = data.wordFilters;
     filters.splice(index, 1);
-    chrome.storage.sync.set({ combinedFilters: filters }, () => {
-      render(filters);
+    chrome.storage.sync.set({ wordFilters: filters }, () => {
+      renderList(wordListEl, filters, removeWord);
     });
   });
 }
 
-addBtn.addEventListener("click", addFilter);
+function addAmount() {
+  const value = amountInput.value.trim();
+  if (!value) return;
+  chrome.storage.sync.get({ amountFilters: [] }, (data) => {
+    const filters = data.amountFilters;
+    if (!filters.includes(value)) {
+      filters.push(value);
+      chrome.storage.sync.set({ amountFilters: filters }, () => {
+        amountInput.value = "";
+        renderList(amountListEl, filters, removeAmount);
+      });
+    }
+  });
+}
+
+function removeAmount(index) {
+  chrome.storage.sync.get({ amountFilters: [] }, (data) => {
+    const filters = data.amountFilters;
+    filters.splice(index, 1);
+    chrome.storage.sync.set({ amountFilters: filters }, () => {
+      renderList(amountListEl, filters, removeAmount);
+    });
+  });
+}
+
+addWordBtn.addEventListener("click", addWord);
 wordInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") addFilter();
-});
-dateInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") addFilter();
+  if (e.key === "Enter") addWord();
 });
 
-loadFilters();
+addAmountBtn.addEventListener("click", addAmount);
+amountInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addAmount();
+});
+
+loadAll();

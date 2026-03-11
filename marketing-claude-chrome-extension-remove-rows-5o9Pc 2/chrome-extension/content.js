@@ -20,19 +20,26 @@ function matchesWord(text, filter) {
   return true;
 }
 
-function matchesDate(text, dateFilter) {
-  return text.toLowerCase().includes(dateFilter.toLowerCase());
+function matchesAmount(text, amount) {
+  return text.includes(amount);
 }
 
-function removeMatchingRows(combinedFilters) {
-  if (!combinedFilters || combinedFilters.length === 0) return;
+let isFiltering = false;
 
+function removeMatchingRows(wordFilters, amountFilters) {
   const rows = document.querySelectorAll("tr");
   rows.forEach((row) => {
     const text = row.textContent;
 
-    for (const filter of combinedFilters) {
-      if (matchesWord(text, filter.word) && matchesDate(text, filter.date)) {
+    for (const w of wordFilters) {
+      if (matchesWord(text, w)) {
+        row.remove();
+        return;
+      }
+    }
+
+    for (const a of amountFilters) {
+      if (matchesAmount(text, a)) {
         row.remove();
         return;
       }
@@ -41,8 +48,11 @@ function removeMatchingRows(combinedFilters) {
 }
 
 function runFilter() {
-  chrome.storage.sync.get({ combinedFilters: [] }, (data) => {
-    removeMatchingRows(data.combinedFilters);
+  if (isFiltering) return;
+  isFiltering = true;
+  chrome.storage.sync.get({ wordFilters: [], amountFilters: [] }, (data) => {
+    removeMatchingRows(data.wordFilters, data.amountFilters);
+    isFiltering = false;
   });
 }
 
@@ -57,7 +67,7 @@ observer.observe(document.body, { childList: true, subtree: true });
 
 // Re-run when filter list is updated from popup
 chrome.storage.onChanged.addListener((changes) => {
-  if (changes.combinedFilters) {
+  if (changes.wordFilters || changes.amountFilters) {
     runFilter();
   }
 });
